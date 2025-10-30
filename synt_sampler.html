@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SYNT Sampler</title>
+<style>
+:root{
+  --bg:#1d1f21;--panel:#2b2e33;--accent:#ff9f43;--text:#e8e8e8;--muted:#b9c0c8;
+  --count:52
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:radial-gradient(1200px 600px at 50% -200px,#2a2d31,#17181a 60%);color:var(--text);
+  font:400 14px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  display:flex;align-items:center;justify-content:center;padding:16px
+}
+.synth{
+  width:100%;max-width:1400px;
+  background:linear-gradient(#34383f,#2a2e34) padding-box,linear-gradient(#555,#111) border-box;
+  border:2px solid transparent;border-radius:12px;box-shadow:0 40px 80px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.06);
+  padding:22px
+}
+h1{margin:0 0 18px;text-align:center;letter-spacing:.25em;color:var(--accent);font-weight:600}
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;background:#2b2e33;
+  padding:16px;border:1px solid #41454d;border-radius:8px;margin-bottom:16px
+}
+.section{border:1px solid #464a52;border-radius:8px;padding:12px;background:linear-gradient(#30343a,#2a2e34)}
+.section h3{margin:0 0 10px;font-size:.95rem;text-align:center;font-weight:600;color:#ffd7b1}
+.row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center}
+label{color:var(--muted);font-size:.85rem}
+select,input[type=file],button{
+  font:inherit;color:var(--text);background:#22262c;border:1px solid #555;border-radius:6px;padding:8px
+}
+button{cursor:pointer}
+button.toggle.active{background:var(--accent);color:#1c1208;border-color:#d78027;font-weight:700}
+.range{appearance:none;width:100%;height:8px;border-radius:6px;background:linear-gradient(#17191c,#121317)}
+.range::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:#cfd3d8;border:2px solid #5b616b}
+.range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#cfd3d8;border:2px solid #5b616b}
+.display{background:#0f1013;color:#ffd7b1;border:1px solid #000;padding:6px 8px;border-radius:6px;text-align:center;font-weight:700}
+.status{font-size:.85rem;color:#c8ccd1;text-align:center;margin:6px 0}
+.status.connected{color:#8cff9b}
+.keyboard{position:relative;height:230px;background:linear-gradient(#0c0d10,#090a0d);border-radius:10px;padding:8px;user-select:none}
+.key{position:absolute;bottom:8px;border-radius:0 0 6px 6px;border:1px solid #0d0e10}
+.key.white{background:linear-gradient(#fff,#e7e8ea);width:calc(100%/var(--count));height:210px}
+.key.black{background:linear-gradient(#333,#111);width:calc(100%/var(--count)*0.6);height:120px;color:#fff;z-index:2}
+.key:focus,.key.active{outline:2px solid var(--accent);outline-offset:-2px;transform:translateY(2px)}
+:focus-visible{box-shadow:0 0 0 2px #000,0 0 0 4px var(--accent);outline:none}
+@media (max-width:720px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="synth" role="application" aria-label="Szintetizátor és sampler">
+  <h1>SYNT Sampler</h1>
+
+  <div class="grid" aria-label="Vezérlőpanelek">
+
+```
+<section class="section" aria-label="Oszcillátor 1">
+  <h3>OSC 1</h3>
+  <div class="row"><label for="osc1-wave">Hullámforma</label>
+    <select id="osc1-wave" aria-label="Oszcillátor 1 hullámforma">
+      <option value="sawtooth">Saw</option>
+      <option value="square">Square</option>
+      <option value="triangle">Triangle</option>
+    </select>
+  </div>
+  <div class="row"><label for="osc1-vol">Hangerő</label>
+    <input id="osc1-vol" class="range" type="range" min="0" max="1" step="0.01" value="0.6" aria-valuetext="OSC1 hangerő">
+  </div>
+  <div class="row"><label for="osc1-tune">Hangolás (cent)</label>
+    <input id="osc1-tune" class="range" type="range" min="-1200" max="1200" step="1" value="0" aria-valuetext="OSC1 hangolás">
+  </div>
+  <button id="osc1-mute" class="toggle" aria-pressed="false" aria-label="OSC1 némítás">MUTE</button>
+</section>
+
+<section class="section" aria-label="Oszcillátor 2">
+  <h3>OSC 2</h3>
+  <div class="row"><label for="osc2-wave">Hullámforma</label>
+    <select id="osc2-wave" aria-label="Oszcillátor 2 hullámforma">
+      <option value="square">Square</option>
+      <option value="sawtooth">Saw</option>
+      <option value="triangle">Triangle</option>
+    </select>
+  </div>
+  <div class="row"><label for="osc2-vol">Hangerő</label>
+    <input id="osc2-vol" class="range" type="range" min="0" max="1" step="0.01" value="0.6" aria-valuetext="OSC2 hangerő">
+  </div>
+  <div class="row"><label for="osc2-tune">Hangolás (cent)</label>
+    <input id="osc2-tune" class="range" type="range" min="-1200" max="1200" step="1" value="0" aria-valuetext="OSC2 hangolás">
+  </div>
+  <button id="osc2-mute" class="toggle" aria-pressed="false" aria-label="OSC2 némítás">MUTE</button>
+</section>
+
+<section class="section" aria-label="Szűrő">
+  <h3>FILTER</h3>
+  <div class="row"><label for="filter-cutoff">Cutoff (Hz)</label>
+    <input id="filter-cutoff" class="range" type="range" min="20" max="20000" step="1" value="20000" aria-valuetext="Szűrő vágási frekvencia">
+  </div>
+  <div class="row"><label for="filter-q">Resonance (Q)</label>
+    <input id="filter-q" class="range" type="range" min="0" max="30" step="0.001" value="0" aria-valuetext="Szűrő rezonancia">
+  </div>
+  <div class="row"><label for="filter-amt">Env Amount</label>
+    <input id="filter-amt" class="range" type="range" min="-1" max="1" step="0.01" value="0" aria-valuetext="Szűrő burkoló mennyiség">
+  </div>
+  <div class="row"><label>Mód</label>
+    <div>
+      <button id="fmode-lp" class="toggle active" aria-pressed="true" aria-label="Aluláteresztő 24 dB/okt">LP 24 dB</button>
+      <button id="fmode-hp" class="toggle" aria-pressed="false" aria-label="Felüláteresztő 12 dB/okt">HP 12 dB</button>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-label="Burkolók">
+  <h3>ENVELOPES</h3>
+  <div class="row"><label for="amp-a">Amp Attack (s)</label><input id="amp-a" class="range" type="range" min="0.001" max="5" step="0.001" value="0.01"></div>
+  <div class="row"><label for="amp-d">Amp Decay (s)</label><input id="amp-d" class="range" type="range" min="0.001" max="5" step="0.001" value="0.1"></div>
+  <div class="row"><label for="amp-s">Amp Sustain</label><input id="amp-s" class="range" type="range" min="0" max="1" step="0.01" value="0.8"></div>
+  <div class="row"><label for="amp-r">Amp Release (s)</label><input id="amp-r" class="range" type="range" min="0.001" max="10" step="0.001" value="0.5"></div>
+
+  <div class="row"><label for="fil-a">Filter Attack (s)</label><input id="fil-a" class="range" type="range" min="0.001" max="5" step="0.001" value="0.01"></div>
+  <div class="row"><label for="fil-d">Filter Decay (s)</label><input id="fil-d" class="range" type="range" min="0.001" max="5" step="0.001" value="0.1"></div>
+  <div class="row"><label for="fil-s">Filter Sustain</label><input id="fil-s" class="range" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+  <div class="row"><label for="fil-r">Filter Release (s)</label><input id="fil-r" class="range" type="range" min="0.001" max="10" step="0.001" value="1"></div>
+</section>
+
+<section class="section" aria-label="LFO és módok">
+  <h3>MOD & MASTER</h3>
+  <div class="row"><label for="lfo-rate">LFO Rate (Hz)</label><input id="lfo-rate" class="range" type="range" min="0.1" max="30" step="0.1" value="5"></div>
+  <div class="row"><label for="lfo-pitch">LFO→Pitch (cent)</label><input id="lfo-pitch" class="range" type="range" min="0" max="1200" step="1" value="0"></div>
+  <div class="row"><label for="lfo-filt">LFO→Filter (cent)</label><input id="lfo-filt" class="range" type="range" min="0" max="4800" step="1" value="0"></div>
+  <div class="row"><label>Mód</label>
+    <div>
+      <button id="mode-synth" class="toggle active" aria-pressed="true" aria-label="Szintetizátor mód">SYNTH</button>
+      <button id="mode-sample" class="toggle" aria-pressed="false" aria-label="Sampler mód">SAMPLER</button>
+      <button id="mode-both" class="toggle" aria-pressed="false" aria-label="Dual mód">DUAL</button>
+    </div>
+  </div>
+  <div class="row"><label for="sample-vol">Minta hangerő</label><input id="sample-vol" class="range" type="range" min="0" max="1" step="0.01" value="0.6"></div>
+  <div class="row"><label for="sample-pitchfollow">Pitch follow</label>
+    <button id="sample-pitchfollow" class="toggle active" aria-pressed="true" aria-label="Sampler hangmagasság követés">ON</button>
+  </div>
+  <div class="row"><label for="sample-file">Minta betöltése</label>
+    <input id="sample-file" type="file" accept="audio/*" aria-label="Hangminta betöltése">
+  </div>
+  <div class="row"><label>Oktáv</label><div id="oct" class="display" aria-live="polite">3</div></div>
+</section>
+```
+
+  </div>
+
+  <div id="midi" class="status" role="status" aria-live="polite">MIDI: nincs kapcsolat</div>
+  <div id="keys" class="keyboard" aria-label="Billentyűzet"></div>
+</div>
+
+<script>
+class PolySynth{
+  constructor(){
+    const AC=window.AudioContext||window.webkitAudioContext;
+    this.ac=new AC();
+    this.master=this.ac.createGain(); this.master.gain.value=0.6; this.master.connect(this.ac.destination);
+
+    this.lfo=this.ac.createOscillator(); this.lfo.type='triangle'; this.lfo.frequency.value=5;
+    this.lfoPitch=this.ac.createGain(); this.lfoPitch.gain.value=0;     // cent
+    this.lfoFilt =this.ac.createGain(); this.lfoFilt .gain.value=0;     // cent
+    this.lfo.connect(this.lfoPitch); this.lfo.connect(this.lfoFilt); this.lfo.start();
+
+    this.mode='synth';
+    this.sampleBuffer=null;
+    this.pitchFollow=true;
+    this.sampleVol=0.6;
+
+    this.voices=new Map();
+    this.voiceOrder=[];
+    this.maxVoices=4;
+    this.octave=3;
+
+    this.bindUI();
+    this.buildKeyboard();
+    this.initMIDI();
+  }
+
+  $(id){ return document.getElementById(id); }
+
+  bindUI(){
+    this.ui={
+      osc1:{wave:this.$('osc1-wave'),vol:this.$('osc1-vol'),tune:this.$('osc1-tune'),mute:this.$('osc1-mute')},
+      osc2:{wave:this.$('osc2-wave'),vol:this.$('osc2-vol'),tune:this.$('osc2-tune'),mute:this.$('osc2-mute')},
+      filt:{cut:this.$('filter-cutoff'),q:this.$('filter-q'),amt:this.$('filter-amt'),
+            lp:this.$('fmode-lp'),hp:this.$('fmode-hp')},
+      amp:{a:this.$('amp-a'),d:this.$('amp-d'),s:this.$('amp-s'),r:this.$('amp-r')},
+      fe:{a:this.$('fil-a'),d:this.$('fil-d'),s:this.$('fil-s'),r:this.$('fil-r')},
+      lfo:{rate:this.$('lfo-rate'),pitch:this.$('lfo-pitch'),filt:this.$('lfo-filt')},
+      mode:{syn:this.$('mode-synth'),sam:this.$('mode-sample'),both:this.$('mode-both')},
+      sample:{file:this.$('sample-file'),vol:this.$('sample-vol'),pf:this.$('sample-pitchfollow')},
+      oct:this.$('oct'),keys:this.$('keys'),midi:this.$('midi')
+    };
+
+    const updCut=()=>this.voices.forEach(v=>v.setCutoff(parseFloat(this.ui.filt.cut.value)));
+    const updQ  =()=>this.voices.forEach(v=>v.setQ(parseFloat(this.ui.filt.q.value)));
+    this.ui.filt.cut.addEventListener('input',updCut);
+    this.ui.filt.q  .addEventListener('input',updQ);
+    this.ui.filt.amt.addEventListener('input',()=>this.voices.forEach(v=>v.updateFilterEnvAmount(this.envAmtCents())));
+
+    this.ui.filt.lp.addEventListener('click',()=>{
+      this.ui.filt.lp.classList.add('active'); this.ui.filt.hp.classList.remove('active');
+      this.ui.filt.lp.setAttribute('aria-pressed','true'); this.ui.filt.hp.setAttribute('aria-pressed','false');
+      this.voices.forEach(v=>v.setMode('lp'));
+    });
+    this.ui.filt.hp.addEventListener('click',()=>{
+      this.ui.filt.hp.classList.add('active'); this.ui.filt.lp.classList.remove('active');
+      this.ui.filt.hp.setAttribute('aria-pressed','true'); this.ui.filt.lp.setAttribute('aria-pressed','false');
+      this.voices.forEach(v=>v.setMode('hp'));
+    });
+
+    this.ui.lfo.rate .addEventListener('input',e=>this.lfo.frequency.setTargetAtTime(parseFloat(e.target.value),this.ac.currentTime,.01));
+    this.ui.lfo.pitch.addEventListener('input',e=>this.lfoPitch.gain.setTargetAtTime(parseFloat(e.target.value),this.ac.currentTime,.01));
+    this.ui.lfo.filt .addEventListener('input',e=>this.lfoFilt .gain.setTargetAtTime(parseFloat(e.target.value),this.ac.currentTime,.01));
+
+    this.ui.osc1.mute.addEventListener('click',e=>this.toggle(e.target));
+    this.ui.osc2.mute.addEventListener('click',e=>this.toggle(e.target));
+
+    const setMode=(m)=>{
+      this.mode=m;
+      const map={syn:m==='synth',sam:m==='sample',both:m==='both'};
+      [['mode-synth','syn'],['mode-sample','sam'],['mode-both','both']].forEach(([id,k])=>{
+        const b=this.$(id); b.classList.toggle('active',map[k]); b.setAttribute('aria-pressed',map[k].toString());
+      });
+    };
+    this.ui.mode.syn .addEventListener('click',()=>setMode('synth'));
+    this.ui.mode.sam .addEventListener('click',()=>{ if(!this.sampleBuffer){alert('Előbb tölts be hangmintát.');return;} setMode('sample');});
+    this.ui.mode.both.addEventListener('click',()=>{ if(!this.sampleBuffer){alert('Előbb tölts be hangmintát.');return;} setMode('both');});
+
+    this.ui.sample.file.addEventListener('change',e=>{
+      const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader(); r.onload=()=>this.ac.decodeAudioData(r.result,buf=>{this.sampleBuffer=buf; alert('Minta betöltve.');});
+      r.readAsArrayBuffer(f);
+    });
+    this.ui.sample.vol.addEventListener('input',e=>{
+      this.sampleVol=parseFloat(e.target.value);
+      this.voices.forEach(v=>v.setSampleGain(this.sampleVol));
+    });
+    this.ui.sample.pf.addEventListener('click',e=>{
+      const on=!(e.target.getAttribute('aria-pressed')==='true');
+      this.pitchFollow=on; e.target.classList.toggle('active',on); e.target.setAttribute('aria-pressed',on.toString());
+    });
+
+    const setOct=(o)=>{this.octave=o; this.ui.oct.textContent=String(o)};
+    setOct(3);
+    document.addEventListener('keydown',(ev)=>{
+      if(ev.repeat) return;
+      if(ev.key==='í'){ if(this.octave>0) setOct(this.octave-1); }
+      else if(ev.key==='y'||ev.key==='x'){ if(this.octave<7) setOct(this.octave+1); }
+    });
+
+    this.bindComputerKeys();
+  }
+
+  toggle(btn){
+    const on=!(btn.getAttribute('aria-pressed')==='true');
+    btn.classList.toggle('active',on); btn.setAttribute('aria-pressed',on.toString());
+  }
+
+  envAmtCents(){
+    const raw=parseFloat(this.ui.filt.amt.value);
+    if(Math.abs(raw)<0.001) return 0;
+    return Math.sign(raw)*Math.pow(Math.abs(raw),2)*4800;
+  }
+
+  noteOn(midi,velocity=0.7){
+    if(this.ac.state==='suspended') this.ac.resume();
+    if(this.voices.has(midi)) return;
+    if(this.voices.size>=this.maxVoices) this.stealOne();
+
+    const freq=440*Math.pow(2,(midi-69)/12);
+    const v=new Voice(this,{
+      freq,
+      osc1:{type:this.ui.osc1.wave.value, vol:this.ui.osc1.mute.classList.contains('active')?0:parseFloat(this.ui.osc1.vol.value), detune:parseFloat(this.ui.osc1.tune.value)},
+      osc2:{type:this.ui.osc2.wave.value, vol:this.ui.osc2.mute.classList.contains('active')?0:parseFloat(this.ui.osc2.vol.value), detune:parseFloat(this.ui.osc2.tune.value)},
+      filter:{
+        mode:this.ui.filt.lp.classList.contains('active')?'lp':'hp',
+        cutoff:parseFloat(this.ui.filt.cut.value),
+        q:parseFloat(this.ui.filt.q.value),
+        envAmtCents:this.envAmtCents()
+      },
+      ampEnv:{a:parseFloat(this.ui.amp.a.value),d:parseFloat(this.ui.amp.d.value),s:parseFloat(this.ui.amp.s.value),r:parseFloat(this.ui.amp.r.value)},
+      filEnv:{a:parseFloat(this.ui.fe.a.value), d:parseFloat(this.ui.fe.d.value), s:parseFloat(this.ui.fe.s.value), r:parseFloat(this.ui.fe.r.value)},
+      lfo:{pitchNode:this.lfoPitch, filtNode:this.lfoFilt},
+      sample:{buffer:this.sampleBuffer, vol:this.sampleVol, follow:this.pitchFollow},
+      mode:this.mode,
+      velocity
+    });
+    this.voices.set(midi,v);
+    this.voiceOrder.push(midi);
+  }
+
+  noteOff(midi){
+    const v=this.voices.get(midi);
+    if(!v) return;
+    v.release(()=>{
+      this.voices.delete(midi);
+      const i=this.voiceOrder.indexOf(midi);
+      if(i>=0) this.voiceOrder.splice(i,1);
+    });
+  }
+
+  stealOne(){
+    const midi=this.voiceOrder.shift();
+    if(midi==null) return;
+    const v=this.voices.get(midi);
+    if(v) v.forceStop();
+    this.voices.delete(midi);
+  }
+
+  buildKeyboard(){
+    const cont=this.ui.keys;
+    cont.style.setProperty('--count','52');
+    let wIndex=0;
+    for(let midi=21;midi<=108;midi++){
+      const n=(midi%12); const isBlack=[1,3,6,8,10].includes(n);
+      if(!isBlack){
+        const el=document.createElement('button');
+        el.className='key white'; el.dataset.midi=String(midi); el.setAttribute('aria-label',this.noteName(midi));
+        const w=100/52; el.style.left=`${wIndex*w}%`; el.style.width=`${w}%`; wIndex++;
+        this.attachKeyHandlers(el,midi); cont.appendChild(el);
+      }else{
+        const el=document.createElement('button');
+        el.className='key black'; el.dataset.midi=String(midi); el.setAttribute('aria-label',this.noteName(midi));
+        const w=100/52; el.style.left=`${(wIndex-0.5)*w}%`; el.style.width=`${w*0.6}%`;
+        this.attachKeyHandlers(el,midi); cont.appendChild(el);
+      }
+    }
+  }
+
+  attachKeyHandlers(el,midi){
+    const on =()=>{ this.noteOn(midi,0.8); el.classList.add('active'); };
+    const off=()=>{ this.noteOff(midi); el.classList.remove('active'); };
+    el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
+    el.addEventListener('touchstart',e=>{e.preventDefault();on();},{passive:false});
+    el.addEventListener('touchend',e=>{e.preventDefault();off();},{passive:false});
+  }
+
+  bindComputerKeys(){
+    const map={'a':0,'w':1,'s':2,'e':3,'d':4,'f':5,'t':6,'g':7,'z':8,'h':9,'u':10,'j':11,
+               'k':12,'o':13,'l':14,'p':15,'ö':16,'ü':17,'ó':18};
+    const held=new Set();
+    const kd=(e)=>{
+      if(e.repeat) return;
+      if(e.key==='í'){this.octave=Math.max(0,this.octave-1); this.ui.oct.textContent=String(this.octave); return;}
+      if(e.key==='y'||e.key==='x'){this.octave=Math.min(7,this.octave+1); this.ui.oct.textContent=String(this.octave); return;}
+      const i=map[e.key]; if(i===undefined) return;
+      if(held.has(e.key)) return; held.add(e.key);
+      const midi=this.octave*12+i; if(midi<21||midi>108) return;
+      this.noteOn(midi,0.8);
+      document.querySelector(`.key[data-midi="${midi}"]`)?.classList.add('active');
+    };
+    const ku=(e)=>{
+      const i=map[e.key]; if(i===undefined) return; held.delete(e.key);
+      const midi=this.octave*12+i; if(midi<21||midi>108) return;
+      this.noteOff(midi);
+      document.querySelector(`.key[data-midi="${midi}"]`)?.classList.remove('active');
+    };
+    document.addEventListener('keydown',kd);
+    document.addEventListener('keyup',ku);
+  }
+
+  async initMIDI(){
+    const el=this.ui.midi;
+    if(!navigator.requestMIDIAccess){ el.textContent='MIDI: nem támogatott'; return; }
+    try{
+      const acc=await navigator.requestMIDIAccess();
+      el.textContent='MIDI: csatlakozva'; el.classList.add('connected');
+      const bind=()=>{
+        acc.inputs.forEach(inp=>{
+          inp.onmidimessage=(ev)=>{
+            const [st,d1,d2]=ev.data; const ch=st&0xf0;
+            if(ch===0x90 && d2>0){ this.noteOn(d1,d2/127); document.querySelector(`.key[data-midi="${d1}"]`)?.classList.add('active'); }
+            else if(ch===0x80 || (ch===0x90 && d2===0)){ this.noteOff(d1); document.querySelector(`.key[data-midi="${d1}"]`)?.classList.remove('active'); }
+          };
+        });
+      };
+      bind(); acc.onstatechange=bind;
+    }catch{ el.textContent='MIDI: hozzáférés elutasítva'; }
+  }
+
+  noteName(midi){
+    const N=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    return `${N[midi%12]}${Math.floor(midi/12)-1}`;
+  }
+}
+
+class Voice{
+  constructor(synth,opts){
+    this.s=synth; const ac=synth.ac; const now=ac.currentTime;
+    this.released=false;
+
+    this.mix=ac.createGain(); this.mix.gain.value=1;
+
+    this.o1=ac.createOscillator(); this.o1.type=opts.osc1.type; this.o1.frequency.value=opts.freq; this.o1.detune.value=opts.osc1.detune;
+    this.g1=ac.createGain(); this.g1.gain.value=opts.osc1.vol; this.o1.connect(this.g1); this.g1.connect(this.mix);
+    synth.lfoPitch.connect(this.o1.detune);
+
+    this.o2=ac.createOscillator(); this.o2.type=opts.osc2.type; this.o2.frequency.value=opts.freq; this.o2.detune.value=opts.osc2.detune;
+    this.g2=ac.createGain(); this.g2.gain.value=opts.osc2.vol; this.o2.connect(this.g2); this.g2.connect(this.mix);
+    synth.lfoPitch.connect(this.o2.detune);
+
+    this.sampleGain=ac.createGain(); this.sampleGain.gain.value=opts.sample.vol;
+    if((opts.mode==='sample'||opts.mode==='both') && opts.sample.buffer){
+      this.src=ac.createBufferSource(); this.src.buffer=opts.sample.buffer;
+      this.src.playbackRate.value=opts.sample.follow ? (opts.freq/261.625565) : 1;
+      this.src.connect(this.sampleGain); this.sampleGain.connect(this.mix);
+    }
+
+    this.lp1=ac.createBiquadFilter(); this.lp1.type='lowpass';
+    this.lp2=ac.createBiquadFilter(); this.lp2.type='lowpass';
+    this.hp =ac.createBiquadFilter(); this.hp.type='highpass';
+    this.setCutoff(opts.filter.cutoff);
+    this.setQ(opts.filter.q);
+
+    this.mode=opts.filter.mode==='lp'?'lp':'hp';
+    if(this.mode==='lp'){ this.mix.connect(this.lp1); this.lp1.connect(this.lp2); this.filterOut=this.lp2; }
+    else{ this.mix.connect(this.hp); this.filterOut=this.hp; }
+
+    synth.lfoFilt.connect(this.lp1.detune);
+    synth.lfoFilt.connect(this.lp2.detune);
+    synth.lfoFilt.connect(this.hp.detune);
+
+    this.vca=ac.createGain(); this.vca.gain.value=0;
+    this.filterOut.connect(this.vca); this.vca.connect(synth.master); // állandó kapcsolat a masterre
+
+    this.feg=ac.createGain(); this.feg.gain.value=0;
+    this.envDC=ac.createConstantSource(); this.envDC.offset.value=1; this.envDC.connect(this.feg);
+    this.feg.connect(this.lp1.detune); this.feg.connect(this.lp2.detune); this.feg.connect(this.hp.detune);
+    this.envDC.start(now);
+
+    this.envAmt=opts.filter.envAmtCents;
+
+    const v=opts.velocity;
+    const AA=opts.ampEnv.a, AD=opts.ampEnv.d, AS=opts.ampEnv.s;
+    this.vca.gain.cancelScheduledValues(now);
+    this.vca.gain.setValueAtTime(0,now);
+    this.vca.gain.linearRampToValueAtTime(v,now+AA);
+    this.vca.gain.setTargetAtTime(v*AS,now+AA,Math.max(AD/3,0.001));
+
+    const FA=opts.filEnv.a, FD=opts.filEnv.d, FS=opts.filEnv.s;
+    this.feg.gain.cancelScheduledValues(now);
+    this.feg.gain.setValueAtTime(0,now);
+    this.feg.gain.linearRampToValueAtTime(this.envAmt,now+FA);
+    this.feg.gain.setTargetAtTime(this.envAmt*FS,now+FA,Math.max(FD/3,0.001));
+
+    this.o1.start(now); this.o2.start(now);
+    if(this.src) this.src.start(now);
+
+    this.stopTimes={ampR:opts.ampEnv.r, filR:opts.filEnv.r};
+  }
+
+  setMode(mode){
+    if(mode===this.mode) return;
+    const oldOut=this.filterOut;
+
+    if(mode==='lp'){
+      try{ this.mix.disconnect(this.hp); }catch{}
+      this.mix.connect(this.lp1); this.lp1.connect(this.lp2); this.filterOut=this.lp2;
+    }else{
+      try{ this.mix.disconnect(this.lp1); this.lp1.disconnect(this.lp2);}catch{}
+      this.mix.connect(this.hp); this.filterOut=this.hp;
+    }
+
+    try{ oldOut && oldOut.disconnect(this.vca); }catch{}
+    this.filterOut.connect(this.vca);
+    this.mode=mode;
+  }
+
+  setCutoff(hz){
+    const t=this.s.ac.currentTime;
+    [this.lp1,this.lp2,this.hp].forEach(f=>f.frequency.setTargetAtTime(hz,t,0.01));
+  }
+  setQ(q){
+    const t=this.s.ac.currentTime;
+    [this.lp1,this.lp2,this.hp].forEach(f=>f.Q.setTargetAtTime(q,t,0.01));
+  }
+  updateFilterEnvAmount(cents){
+    this.envAmt=cents;
+    const now=this.s.ac.currentTime;
+    this.feg.gain.setTargetAtTime(this.envAmt,now,0.02);
+  }
+  setSampleGain(v){
+    if(this.sampleGain) this.sampleGain.gain.setTargetAtTime(v,this.s.ac.currentTime,0.02);
+  }
+
+  release(onEnded){
+    if(this.released) return;
+    this.released=true;
+    const ac=this.s.ac; const now=ac.currentTime;
+    const AR=this.stopTimes.ampR, FR=this.stopTimes.filR;
+
+    this.vca.gain.cancelScheduledValues(now);
+    this.vca.gain.setTargetAtTime(0,now,Math.max(AR/4,0.001));
+
+    this.feg.gain.cancelScheduledValues(now);
+    this.feg.gain.setTargetAtTime(0,now,Math.max(FR/4,0.001));
+
+    const stopT=now+Math.max(AR,FR)+0.02;
+    try{ this.envDC.stop(stopT);}catch{}
+    try{ this.o1.stop(stopT); this.o2.stop(stopT);}catch{}
+    if(this.src){ try{ this.src.stop(stopT);}catch{} }
+
+    setTimeout(()=>{ try{
+      this.vca.disconnect(); this.mix.disconnect();
+      this.lp1.disconnect(); this.lp2.disconnect(); this.hp.disconnect();
+    }catch{} onEnded&&onEnded(); }, (Math.max(AR,FR)*1000)+40);
+  }
+
+  forceStop(){
+    const ac=this.s.ac; const now=ac.currentTime;
+    try{ this.o1.stop(now); this.o2.stop(now);}catch{}
+    if(this.src){ try{ this.src.stop(now);}catch{} }
+    try{ this.envDC.stop(now);}catch{}
+  }
+}
+
+const app=new PolySynth();
+</script>
+
+</body>
+</html>
